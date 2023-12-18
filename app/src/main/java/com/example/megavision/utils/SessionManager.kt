@@ -2,8 +2,7 @@ package com.example.megavision.utils
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.example.megavision.data.model.request.Login
-import com.example.megavision.data.model.response.BaseResponse
+import com.example.megavision.data.model.response.LoginResponse
 
 class SessionManager(var c: Context) {
     var pref: SharedPreferences
@@ -22,14 +21,15 @@ class SessionManager(var c: Context) {
             editor.putString(KEY_TOKEN, keyToken)
             editor.commit()
         }
-    val sessUsername: String?
-        get() = pref.getString(SESS_USERNAME, "")
     val sessName: String?
         get() = pref.getString(SESS_NAME, "")
+    val sessEmail: String?
+        get() = pref.getString(SESS_NAME, "")
 
-    fun setFromLogin(login: BaseResponse) {
-        editor.putString(KEY_TOKEN, login.access_token)
-        editor.putString(SESS_USERNAME, login.user?.name)
+    fun setFromLogin(login: LoginResponse) {
+        editor.putString(KEY_TOKEN, login.accessToken)
+        editor.putString(SESS_NAME, login.user?.name)
+        editor.putString(SESS_EMAIL, login.user?.email)
         editor.commit()
     }
 
@@ -40,7 +40,7 @@ class SessionManager(var c: Context) {
 
     companion object {
         private const val KEY_TOKEN = "token"
-        private const val SESS_USERNAME = "userName"
         private const val SESS_NAME = "name"
+        private const val SESS_EMAIL = "email"
     }
 }

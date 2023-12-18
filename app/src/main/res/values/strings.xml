@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">Megavision</string>
     <string name="no_message_available_from_server">Internal Server Error.</string>
+    <string name="empty_email_field">Please Input Email.</string>
+    <string name="empty_password_field">Please Input Password</string>
 </resources>

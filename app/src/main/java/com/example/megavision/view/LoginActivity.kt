@@ -1,59 +1,99 @@
 package com.example.megavision.view
 
-import android.view.View
+import android.app.ProgressDialog
+import android.content.Intent
+import android.os.Bundle
+import android.os.PersistableBundle
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import com.example.megavision.R
 import com.example.megavision.databinding.ActivityLoginBinding
-import com.example.megavision.utils.NetworkStatus
-import com.example.megavision.utils.Result
-import com.example.megavision.utils.ext.getSafeText
-import com.example.megavision.utils.ext.goToHomeActivity
-import com.example.megavision.utils.ext.showToast
+import com.example.megavision.utils.SessionManager
+import com.example.megavision.utils.Status
 import com.example.megavision.viewmodel.LoginViewModel
-import org.koin.androidx.viewmodel.ext.android.viewModel
 
-class LoginActivity : BaseActivity() {
+class LoginActivity : AppCompatActivity() {
 
-    private var _binding: ActivityLoginBinding? = null
+    private var progressDialog: ProgressDialog? = null
+    private lateinit var sessionManager: SessionManager
+    private lateinit var _binding: ActivityLoginBinding
     private val binding get() = _binding!!
-    private val viewModel: LoginViewModel by viewModel()
+    private lateinit var viewModel: LoginViewModel
 
-    override fun setLayout(): View {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        viewModel = ViewModelProvider(this)[LoginViewModel::class.java]
+
         _binding = ActivityLoginBinding.inflate(layoutInflater)
-        return binding.root
+        setContentView(binding.root)
+
+        initData()
+        initActionButton()
     }
 
-    override fun initClickListener() {
-        with(binding) {
-            btnSignIn.setOnClickListener { _ ->
-                viewModel.login(
-                    email = etEmail.getSafeText().trim(),
-                    password = etPassword.getSafeText().trim()
-                )
+    private fun initData() {
+        sessionManager = SessionManager(this)
+    }
+
+    private fun initActionButton() = with(binding) {
+        btnSignIn.setOnClickListener {
+            if (etEmail.text.isEmpty()) {
+                Toast.makeText(
+                    this@LoginActivity,
+                    resources.getString(R.string.empty_email_field),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else if (etPassword.text.isEmpty()) {
+                Toast.makeText(
+                    this@LoginActivity,
+                    resources.getString(R.string.empty_password_field),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                viewModel.hitLogin(etEmail.text.toString(), etPassword.text.toString())
+                observeLoginData()
             }
         }
     }
 
-    override fun initObserver() {
-        super.initBaseObserver(viewModel)
-
-        viewModel.loginResultLiveData.observe(this) {
-            when (it) {
-                Result.GO_TO_HOME -> {
-                    goToHomeActivity()
+    private fun observeLoginData() {
+        viewModel.networkState?.observe(this) {
+            when (it.status) {
+                Status.RUNNING -> {
+                    showProgressDialog()
                 }
 
-                else -> {
-                    showToast(messageId = R.string.no_message_available_from_server)
+                Status.FAILED, Status.SUCCESS -> {
+                    if (progressDialog != null && progressDialog?.isShowing == true) progressDialog?.dismiss()
+                    if (it.status == Status.FAILED) Toast.makeText(
+                        this,
+                        it.msg,
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }
+
+        viewModel.responseData?.observe(this) { data ->
+            if (data.accessToken != "") {
+                sessionManager.setFromLogin(data)
+                gotoHomeActivity()
+            } else
+                Toast.makeText(this, "Internal Server Error.", Toast.LENGTH_LONG).show()
+        }
     }
 
-    override fun networkAvailable() {
-        viewModel.setNetworkStatus(NetworkStatus.AVAILABLE)
+    private fun showProgressDialog() {
+        progressDialog = ProgressDialog(this)
+        progressDialog?.setCancelable(false)
+        progressDialog?.setTitle("Loading")
+        progressDialog?.show()
     }
 
-    override fun networkUnavailable() {
-        viewModel.setNetworkStatus(NetworkStatus.UNAVAILABLE)
+    private fun gotoHomeActivity() {
+        val intent = Intent(this, HomeActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 }

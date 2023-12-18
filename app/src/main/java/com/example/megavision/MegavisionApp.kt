@@ -1,9 +1,6 @@
 package com.example.megavision
 
 import android.app.Application
-import com.example.megavision.di.networkModule
-import com.example.megavision.di.repositoryModule
-import com.example.megavision.di.viewModelModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -19,13 +16,6 @@ class MegavisionApp : Application() {
         startKoin {
             androidLogger(Level.NONE)
             androidContext(this@MegavisionApp)
-            modules(
-                listOf(
-                    networkModule,
-                    viewModelModule,
-                    repositoryModule
-                )
-            )
         }
     }
 }
